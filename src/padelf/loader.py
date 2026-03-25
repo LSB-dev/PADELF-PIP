@@ -197,9 +197,12 @@ def _build_dataframe(file_path: Path, config: dict) -> pd.DataFrame:
     out.index = datetimes
     out.index.name = "datetime"
 
-    out = out[~out.index.isna()]
+    out = out[out.index.notna()]
     out = out.sort_index()
     out = out[~out.index.duplicated(keep="first")]
+
+    if not isinstance(out.index, pd.DatetimeIndex):
+        raise ValueError("Parsed index must be a pandas DateTimeIndex.")
 
     res_minutes = _infer_resolution_minutes(out.index, config.get("resolution_minutes"))
     regular_index = pd.date_range(

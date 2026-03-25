@@ -73,6 +73,9 @@ def interpolate_gaps(
     Returns:
         DataFrame with small gaps filled via linear interpolation.
     """
+    if not isinstance(df.index, pd.DatetimeIndex):
+        raise ValueError("DataFrame index must be a pandas DateTimeIndex.")
+
     limit_timedelta = pd.Timedelta(limit)
     freq_timedelta = _infer_freq_delta(df.index)
     max_gap_periods = limit_timedelta / freq_timedelta
@@ -96,6 +99,9 @@ def resample_data(
     Returns:
         Resampled DataFrame.
     """
+    if not isinstance(df.index, pd.DatetimeIndex):
+        raise ValueError("DataFrame index must be a pandas DateTimeIndex.")
+
     current_delta = _infer_freq_delta(df.index)
     target_delta = pd.Timedelta(target_resolution)
 
