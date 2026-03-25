@@ -1,4 +1,4 @@
-# padelf
+# PADELF-PACKAGE
 
 Load publicly available electric load forecasting datasets as pandas DataFrames.
 
@@ -39,6 +39,9 @@ PADELF paper (Baur et al., CPSL 2024):
 
 - https://doi.org/10.15488/17659
 
+PADELF Dashboard:
+- to be added
+
 ## Status
 
-This package is currently in alpha. APIs and dataset coverage may evolve.
+This package is a work in progress. APIs and dataset coverage may evolve.
