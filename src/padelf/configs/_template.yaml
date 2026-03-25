@@ -1,0 +1,29 @@
+# Dataset Loader Configuration Template
+# Copy this file and rename to <DATASET_NAME>.yaml (e.g. ENTSO-E.yaml)
+
+# --- Required fields ---
+name: "Full Dataset Name"
+abbreviation: "ABBR"
+download_url: "https://example.com/data.csv"
+file_format: "csv"  # csv | zip | xlsx | api
+
+# --- Column mapping ---
+datetime_column: "timestamp"        # Column name in the raw file
+datetime_format: "%Y-%m-%d %H:%M"  # strptime format string, or "iso" for ISO 8601
+timezone: "UTC"                     # Original timezone (will be converted to UTC)
+
+consumption_column: "load"          # Column name in the raw file
+consumption_unit: "MW"              # Original unit: kW | MW | kWh | MWh
+
+# --- Optional fields ---
+additional_columns: []              # List of extra columns to include
+resolution_minutes: 60              # Native resolution in minutes
+separator: ","                      # CSV separator
+encoding: "utf-8"                   # File encoding
+skip_rows: 0                        # Rows to skip at the top
+
+# --- Download specifics ---
+# For zip files:
+zip_inner_path: "data/load.csv"    # Path inside the zip archive
+# For APIs:
+api_params: {}                      # Query parameters for API-based sources

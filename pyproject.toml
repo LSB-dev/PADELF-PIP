@@ -1,0 +1,39 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "padelf"
+version = "0.1.0"
+description = "Load publicly available electric load forecasting datasets as pandas DataFrames."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.9"
+authors = [
+    { name = "Guilherme Schmid" },
+    { name = "Lukas Baur" },
+]
+keywords = ["electric load forecasting", "datasets", "energy", "time series", "pandas"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+]
+dependencies = [
+    "pandas>=1.5",
+    "pyyaml>=6.0",
+    "requests>=2.28",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0", "pytest-cov"]
+docs = ["mkdocs", "mkdocs-material", "mkdocstrings[python]"]
+
+[project.urls]
+Homepage = "https://github.com/LSB-dev/padelf-pip"
+Repository = "https://github.com/LSB-dev/padelf-pip"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/padelf"]

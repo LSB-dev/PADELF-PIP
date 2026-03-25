@@ -1,0 +1,22 @@
+site_name: padelf
+site_description: Load publicly available electric load forecasting datasets as pandas DataFrames.
+repo_url: https://github.com/LSB-dev/padelf-pip
+
+theme:
+  name: material
+  palette:
+    primary: teal
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            show_source: false
+            show_root_heading: true
+
+nav:
+  - Home: index.md
+  - API Reference: api.md
