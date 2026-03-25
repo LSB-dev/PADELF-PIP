@@ -1,0 +1,23 @@
+name: "Open Power System Data"
+abbreviation: "OPSD"
+
+# Use the 2020-10-06 version, hourly single-index CSV for Germany
+download_url: "https://data.open-power-system-data.org/time_series/2020-10-06/time_series_60min_singleindex.csv"
+download_filename: "opsd_time_series_60min.csv"
+file_format: "csv"
+
+datetime_column: "utc_timestamp"
+datetime_format: "iso"
+timezone: "UTC"
+
+consumption_column: "DE_load_actual_entsoe_transparency"
+consumption_unit: "MW"
+
+additional_columns:
+  - "DE_solar_generation_actual"
+  - "DE_wind_onshore_generation_actual"
+
+resolution_minutes: 60
+separator: ","
+encoding: "utf-8"
+skip_rows: 0

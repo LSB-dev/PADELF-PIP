@@ -3,6 +3,19 @@
 from __future__ import annotations
 
 import pandas as pd
+from pandas.tseries.frequencies import to_offset
+
+
+def _infer_freq_delta(index: pd.DatetimeIndex) -> pd.Timedelta:
+    """Infer a DateTimeIndex frequency as a Timedelta."""
+    freq = pd.infer_freq(index)
+    if freq:
+        return pd.Timedelta(to_offset(freq).nanos, unit="ns")
+
+    diffs = index.to_series().diff().dropna()
+    if diffs.empty:
+        raise ValueError("Cannot infer frequency from index with fewer than 2 timestamps.")
+    return pd.Timedelta(diffs.mode().iloc[0])
 
 
 def convert_unit(
@@ -28,7 +41,23 @@ def convert_unit(
     Raises:
         ValueError: If the conversion is not supported.
     """
-    raise NotImplementedError
+    if from_unit == to_unit:
+        return series
+
+    time_hours = resolution_minutes / 60
+    conversions = {
+        ("MW", "kW"): lambda s: s * 1000,
+        ("kW", "MW"): lambda s: s / 1000,
+        ("kWh", "kW"): lambda s: s / time_hours,
+        ("MWh", "kW"): lambda s: (s * 1000) / time_hours,
+        ("MWh", "MW"): lambda s: s / time_hours,
+        ("kW", "kWh"): lambda s: s * time_hours,
+    }
+
+    try:
+        return conversions[(from_unit, to_unit)](series)
+    except KeyError as exc:
+        raise ValueError(f"Unsupported conversion: {from_unit} -> {to_unit}") from exc
 
 
 def interpolate_gaps(
@@ -44,7 +73,14 @@ def interpolate_gaps(
     Returns:
         DataFrame with small gaps filled via linear interpolation.
     """
-    raise NotImplementedError
+    limit_timedelta = pd.Timedelta(limit)
+    freq_timedelta = _infer_freq_delta(df.index)
+    max_gap_periods = limit_timedelta / freq_timedelta
+    return df.interpolate(
+        method="linear",
+        limit=int(max_gap_periods),
+        limit_area="inside",
+    )
 
 
 def resample_data(
@@ -60,4 +96,9 @@ def resample_data(
     Returns:
         Resampled DataFrame.
     """
-    raise NotImplementedError
+    current_delta = _infer_freq_delta(df.index)
+    target_delta = pd.Timedelta(target_resolution)
+
+    if target_delta >= current_delta:
+        return df.resample(target_resolution).mean()
+    return df.resample(target_resolution).interpolate()

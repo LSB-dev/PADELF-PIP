@@ -37,3 +37,8 @@ Repository = "https://github.com/LSB-dev/padelf-pip"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/padelf"]
+
+[tool.pytest.ini_options]
+markers = [
+    "slow: marks tests that download large datasets or take longer to run",
+]

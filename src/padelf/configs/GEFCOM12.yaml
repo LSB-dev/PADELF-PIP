@@ -1,0 +1,24 @@
+name: "Global Energy Forecasting Competition 2012"
+abbreviation: "GEFCOM12"
+
+# TODO: Dropbox source currently appears unavailable; keep this URL as primary
+# reference and switch to a maintained mirror if download fails.
+download_url: "https://www.dropbox.com/s/4ixjg6sj6g0jfm7/GEFCom2012_loaddata_with_solution.zip?dl=1"
+download_filename: "gefcom2012_load.zip"
+file_format: "zip"
+zip_inner_path: "Load_history_with_solution.csv"
+custom_parser: "gefcom12"
+
+datetime_column: "datetime"
+datetime_format: "iso"
+timezone: "US/Eastern"
+
+consumption_column: "zone21"
+consumption_unit: "MW"
+
+additional_columns: []
+
+resolution_minutes: 60
+separator: ","
+encoding: "utf-8"
+skip_rows: 0

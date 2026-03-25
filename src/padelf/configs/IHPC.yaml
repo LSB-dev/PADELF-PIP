@@ -1,0 +1,31 @@
+name: "Individual Household Power Consumption"
+abbreviation: "IHPC"
+
+download_url: "https://archive.ics.uci.edu/ml/machine-learning-databases/00235/household_power_consumption.zip"
+download_filename: "household_power_consumption.zip"
+file_format: "zip"
+zip_inner_path: "household_power_consumption.txt"
+
+datetime_column:
+  - "Date"
+  - "Time"
+datetime_format: "%d/%m/%Y %H:%M:%S"
+timezone: "Europe/Paris"
+
+consumption_column: "Global_active_power"
+consumption_unit: "kW"
+
+additional_columns:
+  - "Global_reactive_power"
+  - "Voltage"
+  - "Global_intensity"
+  - "Sub_metering_1"
+  - "Sub_metering_2"
+  - "Sub_metering_3"
+
+resolution_minutes: 1
+separator: ";"
+encoding: "utf-8"
+skip_rows: 0
+na_values:
+  - "?"
