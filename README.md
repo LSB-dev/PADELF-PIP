@@ -1,6 +1,7 @@
 # PADELF-PACKAGE
 
 Load publicly available electric load forecasting datasets as pandas DataFrames.
+Based on the PADELF dataset collection (Baur et al., CPSL 2024) and the [PADELF Dashboard](https://github.com/LSB-dev/PADELF-Dashboard). 
 
 ## Installation
 
@@ -35,12 +36,9 @@ Project documentation is generated with MkDocs and mkdocstrings:
 
 ## Reference
 
-PADELF paper (Baur et al., CPSL 2024):
+- [PADELF paper (Baur et al., CPSL 2024):](https://doi.org/10.15488/17659)
 
-- https://doi.org/10.15488/17659
-
-PADELF Dashboard:
-- to be added
+- [PADELF Dashboard:](https://github.com/LSB-dev/PADELF-Dashboard)
 
 ## Status
 
