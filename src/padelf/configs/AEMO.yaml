@@ -1,0 +1,17 @@
+name: "Australian Energy Market Operator"
+abbreviation: "AEMO"
+requires_api: true
+# TODO: Data at https://aemo.com.au/energy-systems/electricity/national-electricity-market-nem/data-nem/network-data
+# Requires navigating portal and downloading per-region CSVs
+download_url: null
+file_format: "api"
+
+datetime_column: null
+datetime_format: "iso"
+timezone: "Australia/Sydney"
+
+consumption_column: "demand"
+consumption_unit: "MW"
+
+additional_columns: []
+resolution_minutes: 60

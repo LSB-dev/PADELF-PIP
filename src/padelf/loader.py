@@ -275,6 +275,16 @@ def get_dataset(
         Index(['consumption_kW', ...])
     """
     config = _load_config(name)
+    
+    # Check if dataset requires API access
+    if config.get("requires_api", False):
+        config_path = CONFIGS_DIR / f"{name}.yaml"
+        raise NotImplementedError(
+            f"Dataset '{name}' requires API access or registration. "
+            f"Direct download is not yet supported. "
+            f"See the dataset config at {config_path} for access instructions."
+        )
+    
     cache = Path(cache_dir) if cache_dir else Path.home() / ".cache" / "padelf"
     cache.mkdir(parents=True, exist_ok=True)
 

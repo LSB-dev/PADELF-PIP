@@ -1,0 +1,18 @@
+name: "ENTSO-E Transparency Platform"
+abbreviation: "ENTSO-E"
+requires_api: true
+# TODO: Requires free registration at https://transparency.entsoe.eu
+# and API key request via email to transparency@entsoe.eu
+# Python client: https://github.com/EnergieID/entsoe-py
+download_url: null
+file_format: "api"
+
+datetime_column: null
+datetime_format: "iso"
+timezone: "UTC"
+
+consumption_column: "load"
+consumption_unit: "MW"
+
+additional_columns: []
+resolution_minutes: 60

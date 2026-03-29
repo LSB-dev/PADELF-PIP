@@ -1,0 +1,17 @@
+name: "RTE France - Electricity Consumption"
+abbreviation: "RTE-France"
+requires_api: true
+# TODO: Data at https://www.rte-france.com/en/eco2mix/electricity-consumption-france
+# Provides API access; also available via OPSD as alternative source
+download_url: null
+file_format: "api"
+
+datetime_column: null
+datetime_format: "iso"
+timezone: "Europe/Paris"
+
+consumption_column: "consumption"
+consumption_unit: "MW"
+
+additional_columns: []
+resolution_minutes: 30

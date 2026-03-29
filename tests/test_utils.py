@@ -45,3 +45,36 @@ class TestInterpolateGaps:
         df = pd.DataFrame({"val": values}, index=idx)
         result = interpolate_gaps(df, limit="2h")
         assert result["val"].isna().any()
+
+
+class TestResampleData:
+    def test_downsample_hourly_to_daily(self):
+        from padelf.utils import resample_data
+        idx = pd.date_range("2020-01-01", periods=48, freq="h", tz="UTC")
+        df = pd.DataFrame({"val": range(48)}, index=idx)
+        result = resample_data(df, "1D")
+        assert len(result) == 2
+
+    def test_upsample_hourly_to_30min(self):
+        from padelf.utils import resample_data
+        idx = pd.date_range("2020-01-01", periods=4, freq="h", tz="UTC")
+        df = pd.DataFrame({"val": [10.0, 20.0, 30.0, 40.0]}, index=idx)
+        result = resample_data(df, "30min")
+        assert len(result) >= 7  # 4 hours = 7 or 8 half-hour periods
+
+
+class TestConvertUnitEdgeCases:
+    def test_mwh_to_kw(self):
+        s = pd.Series([1.0])
+        result = convert_unit(s, "MWh", "kW", 60)
+        assert result.tolist() == [1000.0]  # 1 MWh/h = 1 MW = 1000 kW
+
+    def test_kw_to_kwh(self):
+        s = pd.Series([4.0])
+        result = convert_unit(s, "kW", "kWh", 15)
+        assert result.tolist() == [1.0]  # 4 kW * 0.25h = 1 kWh
+
+    def test_empty_series(self):
+        s = pd.Series([], dtype=float)
+        result = convert_unit(s, "MW", "kW", 60)
+        assert len(result) == 0

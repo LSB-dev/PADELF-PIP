@@ -1,0 +1,17 @@
+name: "Pecan Street Dataport"
+abbreviation: "Pecan Street"
+requires_api: true
+# TODO: Data at https://dataport.pecanstreet.org/
+# Requires free academic registration for data access
+download_url: null
+file_format: "api"
+
+datetime_column: null
+datetime_format: "iso"
+timezone: "US/Central"
+
+consumption_column: "use"
+consumption_unit: "kW"
+
+additional_columns: []
+resolution_minutes: 15

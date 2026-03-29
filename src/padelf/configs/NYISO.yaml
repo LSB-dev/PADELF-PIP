@@ -1,0 +1,17 @@
+name: "New York Independent System Operator"
+abbreviation: "NYISO"
+requires_api: true
+# TODO: Archive at http://mis.nyiso.com/public/P-58Blist.htm
+# Data is in monthly zip archives, requires multi-file download and merge
+download_url: null
+file_format: "api"
+
+datetime_column: null
+datetime_format: "iso"
+timezone: "US/Eastern"
+
+consumption_column: "load"
+consumption_unit: "MW"
+
+additional_columns: []
+resolution_minutes: 5

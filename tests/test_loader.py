@@ -54,3 +54,56 @@ class TestListDatasets:
         datasets = padelf.list_datasets()
         assert "OPSD" in datasets
         assert "IHPC" in datasets
+
+
+class TestApiDatasets:
+    """Test that API-requiring datasets raise NotImplementedError."""
+
+    @pytest.mark.parametrize("name", [
+        "ENTSO-E", "ISO-NE", "NYISO", "AEMO", "RTE-France", "Pecan-Street"
+    ])
+    def test_api_dataset_raises(self, name):
+        with pytest.raises(NotImplementedError, match="requires API access"):
+            padelf.get_dataset(name)
+
+
+class TestListAllDatasets:
+    def test_lists_all_nine_datasets(self):
+        datasets = padelf.list_datasets()
+        assert len(datasets) == 9
+        # Direct download datasets
+        assert "OPSD" in datasets
+        assert "IHPC" in datasets
+        assert "GEFCOM12" in datasets
+        # API datasets
+        assert "ENTSO-E" in datasets
+        assert "ISO-NE" in datasets
+
+
+class TestGetDatasetErrors:
+    def test_unknown_dataset_raises_valueerror(self):
+        with pytest.raises(ValueError, match="Unknown dataset"):
+            padelf.get_dataset("NONEXISTENT")
+
+    def test_case_insensitive_lookup(self):
+        """Verify that dataset names are case-insensitive."""
+        datasets = padelf.list_datasets()
+        if "OPSD" in datasets:
+            # This should not raise ValueError (may raise other errors in non-network env)
+            try:
+                padelf.get_dataset("opsd")
+            except (ConnectionError, OSError):
+                pass  # Network issues OK, but no ValueError means lookup worked
+
+
+@pytest.mark.slow
+class TestResampling:
+    def test_opsd_resample_to_daily(self):
+        df = padelf.get_dataset("OPSD", resolution="D")
+        diffs = df.index.to_series().diff().dropna()
+        assert diffs.iloc[0] == pd.Timedelta("1D")
+
+    def test_opsd_custom_unit(self):
+        df = padelf.get_dataset("OPSD", consumption_unit="MW")
+        # OPSD original is MW, so requesting MW should give original values
+        assert df["consumption_kW"].median() < 100_000  # MW range, not kW
