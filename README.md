@@ -2,6 +2,7 @@
 
 # padelf
 
+
 **Easy Pandas DataFrame-Access to publicly available electric load forecasting datasets**
 
 [![PyPI version](https://img.shields.io/pypi/v/padelf)](https://pypi.org/project/padelf/)
@@ -78,6 +79,10 @@ df = padelf.get_dataset(
 | Pecan Street                           | Pecan Street | 15 min     | US        | Planned |
 
 *\* GEFCOM12: Dropbox source may be intermittently unavailable.*
+
+
+
+![a logo banner](images/logo_footer_pip.PNG)
 
 ## Documentation
 
