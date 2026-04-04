@@ -1,4 +1,4 @@
-![A simle logo](images/logo_padelf_pip.png)
+![A simple logo](images/logo_padelf_pip.png)
 
 # padelf
 
