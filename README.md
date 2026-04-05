@@ -84,6 +84,60 @@ df = padelf.get_dataset(
 
 ![a logo banner](images/logo_footer_pip.PNG)
 
+### Repository Structure
+
+The project uses a src layout with per-dataset YAML configs:
+
+```
+.
+├── README.md
+├── pyproject.toml                # Build config (hatchling backend)
+├── mkdocs.yml                    # Documentation site config
+├── LICENSE
+├── src/padelf/
+│   ├── __init__.py               # Public API: list_datasets(), get_dataset()
+│   ├── loader.py                 # Core loader logic: download, cache, parse, standardize
+│   ├── utils.py                  # Unit conversion, gap interpolation, resampling
+│   └── configs/
+│       ├── _template.yaml        # Template for new loader configs
+│       ├── OPSD.yaml             # Ready
+│       ├── IHPC.yaml             # Ready
+│       ├── GEFCOM12.yaml         # Ready (source URL intermittent)
+│       ├── ENTSO-E.yaml          # API placeholder
+│       ├── ISO-NE.yaml           # API placeholder
+│       ├── NYISO.yaml            # API placeholder
+│       ├── AEMO.yaml             # API placeholder
+│       ├── RTE-France.yaml       # API placeholder
+│       └── Pecan-Street.yaml     # API placeholder
+├── docs/                         # mkdocs source files
+│   ├── index.md
+│   ├── getting-started.md
+│   ├── api.md
+│   └── datasets.md
+└── tests/
+    ├── test_loader.py
+    ├── test_utils.py
+    └── test_smoke.py
+```
+
+### How It Works
+
+The loader architecture follows a per-dataset config pattern. Each YAML file in `src/padelf/configs/` defines a dataset's download URL, file format, column mappings, unit, and preprocessing parameters. When `get_dataset()` is called, `loader.py` reads the corresponding config, downloads the file (or uses a local cache), parses it, and applies standardization via `utils.py`: the load column is renamed to `consumption_kW` with automatic unit conversion (MW, kWh, MWh to kW), the index is converted to an equidistant UTC DateTimeIndex, gaps up to 2 hours are interpolated by default, and optional resampling is applied if requested. Datasets flagged with `requires_api: true` in their config raise `NotImplementedError` with a descriptive message -- these are placeholders for future implementation.
+
+### Adding a New Loader
+
+1. Copy `src/padelf/configs/_template.yaml` to a new file named after the dataset abbreviation (e.g., `MyDataset.yaml`).
+2. Fill in the config fields: `url` (direct download link), `file_format` (csv, zip, xlsx), `load_column` (name of the consumption column in the raw data), `unit` (kW, MW, kWh, or MWh), `datetime_column`, `datetime_format`, and any other relevant parameters. See existing configs like `OPSD.yaml` for reference.
+3. If the dataset requires custom parsing logic beyond what the generic loader handles, extend `loader.py` with a dataset-specific branch.
+4. Add a smoke test in `tests/test_smoke.py` that calls `padelf.get_dataset("MyDataset")` and checks the output has a `consumption_kW` column and a UTC DateTimeIndex.
+5. Update the "Available Datasets" table in this README.
+6. Run all tests: `pytest tests/`
+7. Open a pull request.
+
+### API Placeholder Pattern
+
+Six datasets (ENTSO-E, ISO-NE, NYISO, AEMO, RTE-France, Pecan-Street) are currently configured as API placeholders. Their YAML configs exist with `requires_api: true`, and calling `get_dataset()` on them raises `NotImplementedError`. To convert a placeholder into a working loader, remove the `requires_api` flag and either provide a direct download URL or implement API-specific download logic in `loader.py`. Note that ENTSO-E and ISO-NE have direct CSV downloads available and could be implemented as file-based loaders without API integration.
+
 ## Documentation
 
 Full documentation: [https://lsb-dev.github.io/padelf-pip/](https://lsb-dev.github.io/padelf-pip/)
