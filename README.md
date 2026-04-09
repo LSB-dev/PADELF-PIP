@@ -130,21 +130,12 @@ The loader architecture follows a per-dataset config pattern. Each YAML file in 
 
 ### Adding a New Loader
 
-1. Copy `src/padelf/configs/_template.yaml` to a new file named after the dataset abbreviation (e.g., `MyDataset.yaml`).
-2. Fill in the config fields: `url` (direct download link), `file_format` (csv, zip, xlsx), `load_column` (name of the consumption column in the raw data), `unit` (kW, MW, kWh, or MWh), `datetime_column`, `datetime_format`, and any other relevant parameters. See existing configs like `OPSD.yaml` for reference.
-3. If the dataset requires custom parsing logic beyond what the generic loader handles, extend `loader.py` with a dataset-specific branch.
-4. Add a smoke test in `tests/test_smoke.py` that calls `padelf.get_dataset("MyDataset")` and checks the output has a `consumption_kW` column and a UTC DateTimeIndex.
-5. Update the "Available Datasets" table in this README.
-6. Run all tests: `pytest tests/`
-7. Open a pull request.
+See the [Loader Developer Guide](docs/loader_developer_guide.md) for details on the loader architecture and how to add new datasets.
 
 ### API Placeholder Pattern
 
 Six datasets (ENTSO-E, ISO-NE, NYISO, AEMO, RTE-France, Pecan-Street) are currently configured as API placeholders. Their YAML configs exist with `requires_api: true`, and calling `get_dataset()` on them raises `NotImplementedError`. To convert a placeholder into a working loader, remove the `requires_api` flag and either provide a direct download URL or implement API-specific download logic in `loader.py`. Note that ENTSO-E and ISO-NE have direct CSV downloads available and could be implemented as file-based loaders without API integration.
 
-## Documentation
-
-Full documentation: [https://lsb-dev.github.io/padelf-pip/](https://lsb-dev.github.io/padelf-pip/)
 
 ## Original Catalog
 
