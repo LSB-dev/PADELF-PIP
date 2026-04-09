@@ -27,7 +27,7 @@ import padelf
 
 # See what's available
 padelf.list_datasets()
-# ['AEMO', 'ENTSO-E', 'GEFCOM12', 'IHPC', 'ISO-NE', 'NYISO', 'OPSD', 'Pecan-Street', 'RTE-France']
+# ['AEMO', 'ELD', 'ENTSO-E', 'GEFCOM12', 'IHPC', 'ISO-NE', 'NYISO', 'OPSD', 'Pecan-Street', 'RTE-France', 'VEA']
 
 # Load a dataset — one line, sensible defaults
 df = padelf.get_dataset("OPSD")
@@ -70,6 +70,8 @@ df = padelf.get_dataset(
 | -------------------------------------- | ------------ | ---------- | --------- | ------- |
 | Open Power System Data                 | OPSD         | 60 min     | Europe    | Ready   |
 | Individual Household Power Consumption | IHPC         | 1 min      | France    | Ready   |
+| ElectricityLoadDiagrams20112014        | ELD          | 15 min     | Portugal  | Ready   |
+| 5359 industrial VEA load profiles      | VEA          | 15 min     | Germany   | Ready   |
 | GEFCom 2012                            | GEFCOM12     | 60 min     | US        | Planned |
 | ENTSO-E Transparency                   | ENTSO-E      | 60 min     | Europe    | Planned |
 | ISO New England                        | ISO-NE       | 60 min     | US        | Planned |
@@ -102,6 +104,8 @@ The project uses a src layout with per-dataset YAML configs:
 │       ├── _template.yaml        # Template for new loader configs
 │       ├── OPSD.yaml             # Ready
 │       ├── IHPC.yaml             # Ready
+│       ├── ELD.yaml              # Ready
+│       ├── VEA.yaml              # Ready
 │       ├── GEFCOM12.yaml         # Ready (source URL intermittent)
 │       ├── ENTSO-E.yaml          # API placeholder
 │       ├── ISO-NE.yaml           # API placeholder
