@@ -1,4 +1,59 @@
-"""Core dataset loading logic."""
+"""Core dataset loading logic for the padelf package.
+
+This module implements the full pipeline from dataset config to standardized
+pandas DataFrame:
+
+    Config YAML  -->  Download & Cache  -->  Parse (generic or custom)  -->  Standardize  -->  Output
+
+Architecture
+------------
+Each dataset is defined by a YAML config file in ``src/padelf/configs/``.
+The loader reads the config, downloads the raw data file (with local caching),
+parses it into a DataFrame, and applies standardization (UTC index, unit
+conversion, gap interpolation, optional resampling).
+
+Parsing paths
+~~~~~~~~~~~~~
+There are two parsing paths:
+
+1. **Generic path** (default): reads a CSV file using parameters from the config
+   (separator, decimal, datetime column, load column). Handles single-column
+   loads and ``__aggregate_all__`` multi-column aggregation.
+
+2. **Custom parser path**: for datasets with non-standard formats (wide tables,
+   special column layouts). Activated by setting ``custom_parser: "<name>"``
+   in the dataset config. Custom parsers are registered in ``_CUSTOM_PARSERS``.
+
+Currently registered custom parsers:
+
+- ``gefcom12``: Parses GEFCOM12 wide hourly format (year/month/day + h1..h24
+  columns + optional zone columns). Melts to long format and groups by datetime.
+- ``eld``: Parses ELD (ElectricityLoadDiagrams20112014) semicolon-delimited CSV
+  with European decimal format. 370 client columns, Portuguese local time.
+- ``vea``: Parses VEA wide format (5359 rows x 35136 time columns). Transposes
+  to long format, builds DateTimeIndex from known start time, converts
+  Europe/Berlin to UTC.
+
+Aggregation
+~~~~~~~~~~~
+Datasets with many individual load columns (ELD: 370 clients, VEA: 5359 sites)
+use ``load_column: "__aggregate_all__"`` in their config. By default, all
+numeric columns are summed into a single ``consumption_kW`` column. Pass
+``aggregate=False`` to ``get_dataset()`` to retain individual columns.
+
+Adding a new dataset
+~~~~~~~~~~~~~~~~~~~~
+1. Create a YAML config in ``src/padelf/configs/`` (copy ``_template.yaml``).
+2. If the file format is a standard CSV: fill in config fields, no code needed.
+3. If the format is non-standard: write a custom parser function with signature
+   ``(file_path: Path, config: dict, aggregate: bool) -> pd.DataFrame``,
+   then register it in ``_CUSTOM_PARSERS``.
+4. Add a smoke test in ``tests/test_smoke.py``.
+
+See Also
+--------
+padelf.utils : Unit conversion, gap interpolation, resampling utilities.
+"""
 
 from __future__ import annotations
 
@@ -19,7 +74,20 @@ CONFIGS_DIR = Path(__file__).parent / "configs"
 
 
 def _load_config(name: str) -> dict:
-    """Load dataset configuration YAML by case-insensitive name."""
+    """Load a dataset configuration YAML by case-insensitive name.
+
+    Scans ``src/padelf/configs/`` for YAML files (excluding those starting
+    with ``_``). Matches the given name case-insensitively against filenames.
+
+    Args:
+        name: Dataset identifier (e.g. ``"OPSD"``).
+
+    Returns:
+        Parsed YAML config as a dictionary.
+
+    Raises:
+        ValueError: If no config matches the given name.
+    """
     configs = {
         p.stem.lower(): p
         for p in CONFIGS_DIR.glob("*.yaml")
@@ -35,7 +103,22 @@ def _load_config(name: str) -> dict:
 
 
 def _download_file(url: str, cache_dir: Path, filename: str) -> Path:
-    """Download a file into cache and return local path."""
+    """Download a file to the local cache directory.
+
+    If the file already exists in cache, the download is skipped.
+    Uses streaming to handle large files.
+
+    Args:
+        url: Direct download URL.
+        cache_dir: Local directory for cached files.
+        filename: Target filename in cache.
+
+    Returns:
+        Path to the cached file.
+
+    Raises:
+        requests.HTTPError: If the download fails.
+    """
     cache_dir.mkdir(parents=True, exist_ok=True)
     target_path = cache_dir / filename
     if target_path.exists():
@@ -54,7 +137,19 @@ def _download_file(url: str, cache_dir: Path, filename: str) -> Path:
 
 
 def _extract_zip(zip_path: Path, inner_path: str, cache_dir: Path) -> Path:
-    """Extract a single member from a zip archive into cache directory."""
+    """Extract a single member from a ZIP archive.
+
+    Args:
+        zip_path: Path to the ZIP file.
+        inner_path: Path of the target file inside the archive.
+        cache_dir: Directory to extract into.
+
+    Returns:
+        Path to the extracted file.
+
+    Raises:
+        ValueError: If ``inner_path`` is not found in the archive.
+    """
     with zipfile.ZipFile(zip_path, "r") as zf:
         if inner_path not in zf.namelist():
             raise ValueError(f"'{inner_path}' not found in archive '{zip_path.name}'.")
@@ -63,7 +158,21 @@ def _extract_zip(zip_path: Path, inner_path: str, cache_dir: Path) -> Path:
 
 
 def _infer_resolution_minutes(index: pd.DatetimeIndex, fallback: Optional[int]) -> int:
-    """Infer dataset resolution in minutes from DateTimeIndex."""
+    """Infer temporal resolution in minutes from a DateTimeIndex.
+
+    Uses ``pd.infer_freq`` first, then falls back to the mode of consecutive
+    differences. If ``fallback`` is provided, it is returned directly.
+
+    Args:
+        index: DateTimeIndex to analyze.
+        fallback: If not None, returned without inference.
+
+    Returns:
+        Resolution in minutes.
+
+    Raises:
+        ValueError: If the index has fewer than 2 rows and no fallback.
+    """
     if fallback is not None:
         return int(fallback)
     freq = pd.infer_freq(index)
@@ -82,7 +191,22 @@ def _parse_gefcom12(
     config: dict,
     aggregate: bool = True,
 ) -> pd.DataFrame:
-    """Parse GEFCOM12 wide hourly format into a long timestamped DataFrame."""
+    """Parse GEFCOM12 wide hourly format into a long-format DataFrame.
+
+    The GEFCOM12 CSV has columns: year, month, day, h1..h24, and optionally
+    zone1..zone20. This parser melts the hourly columns into rows, constructs
+    datetime values, and optionally sums zone columns into a ``zone21``
+    aggregate.
+
+    Args:
+        file_path: Path to the CSV file.
+        config: Dataset config (used for separator, encoding, skip_rows).
+        aggregate: Unused for GEFCOM12 (kept for interface consistency).
+
+    Returns:
+        DataFrame with ``datetime`` column and zone/load value columns.
+        Not yet indexed -- ``_build_dataframe`` handles indexing.
+    """
     df = pd.read_csv(
         file_path,
         sep=config.get("separator", ","),
@@ -152,7 +276,25 @@ def _parse_gefcom12(
 
 
 def _parse_eld(file_path: Path, config: dict, aggregate: bool = True) -> pd.DataFrame:
-    """Parse ELD wide format into a datetime-indexed numeric DataFrame."""
+    """Parse ELD (ElectricityLoadDiagrams20112014) into a numeric DataFrame.
+
+    The ELD file is semicolon-delimited with European decimal format (commas).
+    The first column is a datetime index in Portuguese local time. The
+    remaining 370 columns represent individual client load profiles in kW.
+
+    This parser reads and coerces all columns to numeric. Timezone conversion
+    and aggregation are handled downstream by ``_build_dataframe``.
+
+    Args:
+        file_path: Path to the extracted ``LD2011_2014.txt`` file.
+        config: Dataset config (used for separator, decimal, encoding).
+        aggregate: Unused here (aggregation handled by ``_build_dataframe``
+            via ``__aggregate_all__``).
+
+    Returns:
+        DataFrame with DateTimeIndex (Portuguese local time) and 370 numeric
+        columns. Not yet UTC-converted -- ``_build_dataframe`` handles this.
+    """
     df = pd.read_csv(
         file_path,
         sep=config.get("separator", config.get("csv_separator", ";")),
@@ -169,7 +311,29 @@ def _parse_eld(file_path: Path, config: dict, aggregate: bool = True) -> pd.Data
 
 
 def _parse_vea(file_path: Path, config: dict, aggregate: bool = True) -> pd.DataFrame:
-    """Parse VEA wide format and return UTC-indexed consumption data."""
+    """Parse VEA wide-format industrial load profiles.
+
+    The VEA file has one row per industrial site (5359 total) and one column
+    per 15-minute timestep (``time0`` through ``time35135``), covering the
+    full year 2016 (leap year). Values are in kW.
+
+    Unlike other custom parsers, this one fully handles output construction:
+    it builds the UTC DateTimeIndex from the known start time and returns
+    a ready-to-use DataFrame. The ``_build_dataframe`` function skips its
+    normal datetime/aggregation logic for this parser.
+
+    Args:
+        file_path: Path to ``load_profiles_tabsep.csv``.
+        config: Dataset config (used for start_datetime, source_timezone).
+        aggregate: If True (default), returns a single ``consumption_kW``
+            column summed across all 5359 sites. If False, returns all
+            individual site columns plus ``consumption_kW`` (warning: ~188M
+            cells, high memory usage).
+
+    Returns:
+        DataFrame with UTC DateTimeIndex and ``consumption_kW`` column.
+        If ``aggregate=False``, also includes ``site_<id>`` columns.
+    """
     raw = pd.read_csv(
         file_path,
         sep="\t",
@@ -212,6 +376,18 @@ def _parse_vea(file_path: Path, config: dict, aggregate: bool = True) -> pd.Data
     return site_profiles
 
 
+# ---------------------------------------------------------------------------
+# Custom parser registry
+#
+# To add a new custom parser:
+# 1. Write a function with signature:
+#        def _parse_<name>(file_path: Path, config: dict, aggregate: bool = True) -> pd.DataFrame
+# 2. Register it here: _CUSTOM_PARSERS["<name>"] = _parse_<name>
+# 3. Set custom_parser: "<name>" in the dataset's YAML config.
+#
+# If the parser fully handles datetime indexing and aggregation (like VEA),
+# add its name to the parser_handles_output check in _build_dataframe.
+# ---------------------------------------------------------------------------
 _CUSTOM_PARSERS = {
     "gefcom12": _parse_gefcom12,
     "eld": _parse_eld,
@@ -220,7 +396,32 @@ _CUSTOM_PARSERS = {
 
 
 def _build_dataframe(file_path: Path, config: dict, aggregate: bool = True) -> pd.DataFrame:
-    """Read raw file and transform it into a normalized DataFrame."""
+    """Read a raw data file and transform it into a standardized DataFrame.
+
+    This is the central parsing dispatcher. It either delegates to a custom
+    parser (if ``custom_parser`` is set in the config) or uses the generic
+    CSV reading path.
+
+    After parsing, it:
+    1. Builds or extracts a datetime column and converts to UTC.
+    2. Selects or aggregates load columns into ``consumption_kW``.
+    3. Removes NaT indices, sorts, deduplicates.
+    4. Reindexes to an equidistant DateTimeIndex.
+
+    Custom parsers that fully handle their own output (e.g. ``vea``) are
+    listed in the ``parser_handles_output`` check. For these, steps 1-2
+    are skipped since the parser already returns a UTC-indexed DataFrame
+    with ``consumption_kW``.
+
+    Args:
+        file_path: Path to the extracted/downloaded data file.
+        config: Parsed YAML config dictionary.
+        aggregate: If True, multi-column datasets return only ``consumption_kW``.
+            If False, individual columns are preserved.
+
+    Returns:
+        DataFrame with UTC DateTimeIndex and ``consumption_kW`` column.
+    """
     custom_parser = config.get("custom_parser")
     parser_handles_output = False
     if custom_parser:
