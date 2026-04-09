@@ -130,7 +130,7 @@ The loader architecture follows a per-dataset config pattern. Each YAML file in 
 
 ### Adding a New Loader
 
-See the [Loader Developer Guide](docs/loader_developer_guide.md) for details on the loader architecture and how to add new datasets.
+See the [Loader Developer Guide](https://github.com/LSB-dev/PADELF-PIP/blob/main/docs/loader-developer-guide.md) for details on the loader architecture and how to add new datasets.
 
 ### API Placeholder Pattern
 
