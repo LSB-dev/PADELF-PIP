@@ -1,35 +1,56 @@
 # 5359 industrial VEA load profiles (VEA)
 # Source: Zenodo (record 13910298)
-# 5359 industrial load profiles from Germany, 15-min resolution, year 2016
-# Values are in kW
+# Author: Paul Hendrik Tiemann
+# License: CC-BY-4.0 (VEA Bundesverband der Energie-Abnehmer e. V.)
+#
+# 5359 one-year quarterhourly industrial load profiles (2016, leap year, 35136 values per profile).
+# Each profile describes the electricity consumption of one industrial/commercial site in Germany.
+# Values are in kW (quarterhourly average).
+# Local electricity generation was excluded from the data.
+#
+# FILE FORMAT (wide):
+#   - load_profiles_tabsep.csv (tab-separated)
+#   - Column "id": site identifier (matches master_data)
+#   - Columns "time0" to "time35135": 15-minute blocks in consecutive order
+#     - time0     = 2016-01-01 00:00 to 00:15
+#     - time35135 = 2016-12-31 23:45 to 24:00
+#   - Decimal separator: "." (English)
+#
+# MASTER DATA (separate file, not loaded by default):
+#   - master_data_tabsep.csv: sector_group, zip_code, grid_level per site
+#
+# HIGH LOAD TIMES (separate file, not loaded by default):
+#   - hlt_profiles_tabsep.csv: binary (1/0) per quarterhour
 
 name: "5359 industrial VEA load profiles"
 abbreviation: "VEA"
-url: "https://zenodo.org/records/13910298/files/load-profile-data.zip?download=1"  file_format: "zip"  # TODO: verify actual format on Zenodo (zip or csv)
-inner_file: ""  # TODO: set filename inside archive after inspecting Zenodo download
+url: "https://zenodo.org/records/13910298/files/load-profile-data.zip?download=1"  
+file_format: "zip"
+inner_file: "load_profiles_tabsep.csv"
 
 # CSV parsing
-csv_separator: ","  # TODO: verify separator after inspecting file
-csv_decimal: "."    # TODO: verify decimal format
+csv_separator: "\t"
+csv_decimal: "."
 
-# Datetime
-datetime_column: 0  # TODO: verify column name/index after inspecting file
-datetime_format: "%Y-%m-%d %H:%M:%S"  # TODO: verify format
+# Datetime -- NOT a regular datetime column.
+# Wide format: columns time0..time35135 are consecutive 15-min slots starting 2016-01-01.
+# Requires custom parser to melt into long format.
+custom_parser: "vea"
+
+# Time reference
 source_timezone: "Europe/Berlin"
+start_datetime: "2016-01-01 00:00:00"
+resolution_minutes: 15
+num_timesteps: 35136
 
 # Load column
-# The file contains 5359 individual industrial plant profiles.
-# Default behavior: sum all into consumption_kW.
-# If aggregate=False is passed, individual columns are preserved alongside the sum.
 load_column: "__aggregate_all__"
 unit: "kW"
 
 # Metadata
 domain: "I"
 region: "Germany"
-resolution_minutes: 15
 spanned_years: "2016"
 duration_months: 12
-source_doi: ""  # TODO: insert DOI from Zenodo
 
 requires_api: false
