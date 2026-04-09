@@ -145,7 +145,7 @@ To explore more datasets, check out the original [PADELF Repository](https://git
 
 ## Citation
 
-If you use `padelf` in your research, please cite the underlying dataset catalog:
+If this work has helped you with your scientific work, we would appreciate a proper mention. ❤️
 
 ```bibtex
 @inproceedings{baur2024datasets,
