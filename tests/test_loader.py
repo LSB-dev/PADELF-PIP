@@ -1,6 +1,7 @@
 import pandas as pd
 import pytest
 import padelf
+from padelf.loader import _build_dataframe
 
 
 @pytest.mark.slow
@@ -143,3 +144,45 @@ def test_aggregate_false_keeps_all_columns():
     assert "A" in df.columns
     assert "B" in df.columns
     assert "consumption_kW" in df.columns
+
+
+def test_vea_custom_parser_aggregate_true(tmp_path):
+    """VEA parser should return only consumption_kW when aggregate=True."""
+    csv_content = "id\ttime0\ttime1\n1\t1.0\t2.0\n2\t3.0\t4.0\n"
+    data_path = tmp_path / "load_profiles_tabsep.csv"
+    data_path.write_text(csv_content, encoding="utf-8")
+
+    config = {
+        "custom_parser": "vea",
+        "source_timezone": "Europe/Berlin",
+        "start_datetime": "2016-01-01 00:00:00",
+        "resolution_minutes": 15,
+    }
+
+    out = _build_dataframe(data_path, config, aggregate=True)
+
+    assert list(out.columns) == ["consumption_kW"]
+    assert out["consumption_kW"].iloc[0] == 4.0
+    assert out["consumption_kW"].iloc[1] == 6.0
+
+
+def test_vea_custom_parser_aggregate_false_warns(tmp_path):
+    """VEA parser should warn and keep site columns when aggregate=False."""
+    csv_content = "id\ttime0\ttime1\n10\t1.0\t2.0\n20\t3.0\t4.0\n"
+    data_path = tmp_path / "load_profiles_tabsep.csv"
+    data_path.write_text(csv_content, encoding="utf-8")
+
+    config = {
+        "custom_parser": "vea",
+        "source_timezone": "Europe/Berlin",
+        "start_datetime": "2016-01-01 00:00:00",
+        "resolution_minutes": 15,
+    }
+
+    with pytest.warns(RuntimeWarning, match="aggregate=False"):
+        out = _build_dataframe(data_path, config, aggregate=False)
+
+    assert "site_10" in out.columns
+    assert "site_20" in out.columns
+    assert "consumption_kW" in out.columns
+    assert out["consumption_kW"].iloc[0] == 4.0

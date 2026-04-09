@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import warnings
 import zipfile
 from pathlib import Path
 from typing import Optional
@@ -76,7 +77,11 @@ def _infer_resolution_minutes(index: pd.DatetimeIndex, fallback: Optional[int]) 
     return int(diffs.mode().iloc[0].total_seconds() // 60)
 
 
-def _parse_gefcom12(file_path: Path, config: dict) -> pd.DataFrame:
+def _parse_gefcom12(
+    file_path: Path,
+    config: dict,
+    aggregate: bool = True,
+) -> pd.DataFrame:
     """Parse GEFCOM12 wide hourly format into a long timestamped DataFrame."""
     df = pd.read_csv(
         file_path,
@@ -146,7 +151,7 @@ def _parse_gefcom12(file_path: Path, config: dict) -> pd.DataFrame:
     return result
 
 
-def _parse_eld(file_path: Path, config: dict) -> pd.DataFrame:
+def _parse_eld(file_path: Path, config: dict, aggregate: bool = True) -> pd.DataFrame:
     """Parse ELD wide format into a datetime-indexed numeric DataFrame."""
     df = pd.read_csv(
         file_path,
@@ -163,15 +168,61 @@ def _parse_eld(file_path: Path, config: dict) -> pd.DataFrame:
     return df
 
 
+def _parse_vea(file_path: Path, config: dict, aggregate: bool = True) -> pd.DataFrame:
+    """Parse VEA wide format and return UTC-indexed consumption data."""
+    raw = pd.read_csv(
+        file_path,
+        sep="\t",
+        decimal=".",
+        encoding=config.get("encoding", "utf-8"),
+        skiprows=config.get("skip_rows", 0),
+        na_values=config.get("na_values", []),
+    )
+
+    time_cols = [col for col in raw.columns if str(col).startswith("time")]
+    if not time_cols:
+        raise ValueError("VEA parser could not find time0..timeN columns.")
+
+    start_datetime = config.get("start_datetime", "2016-01-01 00:00:00")
+    source_tz = config.get("timezone", config.get("source_timezone", "Europe/Berlin"))
+    index = pd.date_range(
+        start=start_datetime,
+        periods=len(time_cols),
+        freq="15min",
+        tz=source_tz,
+    ).tz_convert("UTC")
+
+    if aggregate:
+        aggregated = raw[time_cols].sum(axis=0)
+        out = pd.DataFrame({"consumption_kW": aggregated.to_numpy()}, index=index)
+        out.index.name = "datetime"
+        return out
+
+    warnings.warn(
+        "VEA aggregate=False returns all site profiles and can require substantial memory.",
+        RuntimeWarning,
+        stacklevel=2,
+    )
+    site_profiles = raw[time_cols].transpose().copy()
+    if "id" in raw.columns:
+        site_profiles.columns = [f"site_{site_id}" for site_id in raw["id"].tolist()]
+    site_profiles.index = index
+    site_profiles.index.name = "datetime"
+    site_profiles["consumption_kW"] = site_profiles.sum(axis=1)
+    return site_profiles
+
+
 _CUSTOM_PARSERS = {
     "gefcom12": _parse_gefcom12,
     "eld": _parse_eld,
+    "vea": _parse_vea,
 }
 
 
 def _build_dataframe(file_path: Path, config: dict, aggregate: bool = True) -> pd.DataFrame:
     """Read raw file and transform it into a normalized DataFrame."""
     custom_parser = config.get("custom_parser")
+    parser_handles_output = False
     if custom_parser:
         parser = _CUSTOM_PARSERS.get(custom_parser)
         if parser is None:
@@ -179,7 +230,8 @@ def _build_dataframe(file_path: Path, config: dict, aggregate: bool = True) -> p
             raise ValueError(
                 f"Unknown custom parser '{custom_parser}'. Available parsers: {available}"
             )
-        df = parser(file_path, config)
+        df = parser(file_path, config, aggregate=aggregate)
+        parser_handles_output = custom_parser in {"vea"}
     else:
         file_format = config["file_format"]
         separator = config.get("separator", config.get("csv_separator", ","))
@@ -219,24 +271,27 @@ def _build_dataframe(file_path: Path, config: dict, aggregate: bool = True) -> p
         datetimes = datetimes.dt.tz_convert(source_tz)
     datetimes = datetimes.dt.tz_convert("UTC")
 
-    load_column = config.get("load_column", config.get("consumption_column"))
-    if load_column == "__aggregate_all__":
-        numeric_cols = list(df.select_dtypes(include="number").columns)
-        out = df[numeric_cols].copy()
-        out["consumption_kW"] = out[numeric_cols].sum(axis=1)
-        if aggregate:
-            out = out[["consumption_kW"]]
+    if parser_handles_output:
+        out = df.copy()
     else:
-        if load_column is None:
-            raise ValueError("Missing 'consumption_column' or 'load_column' in dataset config.")
-        keep_columns = [load_column]
-        additional_columns = config.get("additional_columns", [])
-        keep_columns.extend(additional_columns)
-        keep_columns = [col for col in keep_columns if col in df.columns]
+        load_column = config.get("load_column", config.get("consumption_column"))
+        if load_column == "__aggregate_all__":
+            numeric_cols = list(df.select_dtypes(include="number").columns)
+            out = df[numeric_cols].copy()
+            out["consumption_kW"] = out[numeric_cols].sum(axis=1)
+            if aggregate:
+                out = out[["consumption_kW"]]
+        else:
+            if load_column is None:
+                raise ValueError("Missing 'consumption_column' or 'load_column' in dataset config.")
+            keep_columns = [load_column]
+            additional_columns = config.get("additional_columns", [])
+            keep_columns.extend(additional_columns)
+            keep_columns = [col for col in keep_columns if col in df.columns]
 
-        out = df[keep_columns].copy()
-        out = out.rename(columns={load_column: "consumption_kW"})
-        out["consumption_kW"] = pd.to_numeric(out["consumption_kW"], errors="coerce")
+            out = df[keep_columns].copy()
+            out = out.rename(columns={load_column: "consumption_kW"})
+            out["consumption_kW"] = pd.to_numeric(out["consumption_kW"], errors="coerce")
 
     out.index = datetimes
     out.index.name = "datetime"
