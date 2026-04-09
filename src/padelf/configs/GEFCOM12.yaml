@@ -1,9 +1,8 @@
 name: "Global Energy Forecasting Competition 2012"
 abbreviation: "GEFCOM12"
 
-# TODO: Dropbox source currently appears unavailable; keep this URL as primary
-# reference and switch to a maintained mirror if download fails.
-download_url: "https://www.dropbox.com/s/4ixjg6sj6g0jfm7/GEFCom2012_loaddata_with_solution.zip?dl=1"
+# TODO: Kaggle Login necessary to download from Kaggle. Consider adding instructions in README or providing an alternative source.
+download_url: ""
 download_filename: "gefcom2012_load.zip"
 file_format: "zip"
 zip_inner_path: "Load_history_with_solution.csv"
