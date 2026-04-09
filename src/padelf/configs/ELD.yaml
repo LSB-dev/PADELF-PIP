@@ -9,6 +9,7 @@ abbreviation: "ELD"
 url: "https://archive.ics.uci.edu/static/public/321/electricityloaddiagrams20112014.zip"  
 file_format: "zip"
 inner_file: "LD2011_2014.txt"
+custom_parser: "eld"
 
 # CSV parsing
 csv_separator: ";"

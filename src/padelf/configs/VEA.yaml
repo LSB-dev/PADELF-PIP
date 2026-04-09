@@ -1,0 +1,35 @@
+# 5359 industrial VEA load profiles (VEA)
+# Source: Zenodo (record 13910298)
+# 5359 industrial load profiles from Germany, 15-min resolution, year 2016
+# Values are in kW
+
+name: "5359 industrial VEA load profiles"
+abbreviation: "VEA"
+url: "https://zenodo.org/records/13910298/files/load-profile-data.zip?download=1"  file_format: "zip"  # TODO: verify actual format on Zenodo (zip or csv)
+inner_file: ""  # TODO: set filename inside archive after inspecting Zenodo download
+
+# CSV parsing
+csv_separator: ","  # TODO: verify separator after inspecting file
+csv_decimal: "."    # TODO: verify decimal format
+
+# Datetime
+datetime_column: 0  # TODO: verify column name/index after inspecting file
+datetime_format: "%Y-%m-%d %H:%M:%S"  # TODO: verify format
+source_timezone: "Europe/Berlin"
+
+# Load column
+# The file contains 5359 individual industrial plant profiles.
+# Default behavior: sum all into consumption_kW.
+# If aggregate=False is passed, individual columns are preserved alongside the sum.
+load_column: "__aggregate_all__"
+unit: "kW"
+
+# Metadata
+domain: "I"
+region: "Germany"
+resolution_minutes: 15
+spanned_years: "2016"
+duration_months: 12
+source_doi: ""  # TODO: insert DOI from Zenodo
+
+requires_api: false

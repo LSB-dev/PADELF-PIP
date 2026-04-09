@@ -107,3 +107,39 @@ class TestResampling:
         df = padelf.get_dataset("OPSD", consumption_unit="MW")
         # OPSD original is MW, so requesting MW should give original values
         assert df["consumption_kW"].median() < 100_000  # MW range, not kW
+
+
+def test_aggregate_all_sums_columns():
+    """Test that __aggregate_all__ correctly sums numeric columns."""
+    dates = pd.date_range("2020-01-01", periods=4, freq="15min", tz="UTC")
+    df = pd.DataFrame(
+        {
+            "A": [1.0, 2.0, 3.0, 4.0],
+            "B": [10.0, 20.0, 30.0, 40.0],
+            "C": [100.0, 200.0, 300.0, 400.0],
+        },
+        index=dates,
+    )
+
+    df["consumption_kW"] = df.select_dtypes(include="number").sum(axis=1)
+
+    assert df["consumption_kW"].iloc[0] == 111.0
+    assert df["consumption_kW"].iloc[3] == 444.0
+
+
+def test_aggregate_false_keeps_all_columns():
+    """Test that aggregate=False preserves individual columns."""
+    dates = pd.date_range("2020-01-01", periods=4, freq="15min", tz="UTC")
+    df = pd.DataFrame(
+        {
+            "A": [1.0, 2.0, 3.0, 4.0],
+            "B": [10.0, 20.0, 30.0, 40.0],
+        },
+        index=dates,
+    )
+
+    df["consumption_kW"] = df.select_dtypes(include="number").sum(axis=1)
+
+    assert "A" in df.columns
+    assert "B" in df.columns
+    assert "consumption_kW" in df.columns

@@ -1,6 +1,4 @@
-"""
-padelf - Load publicly available electric load forecasting datasets as pandas DataFrames.
-"""
+"""padelf public API for loading electric load forecasting datasets."""
 
 from padelf.loader import get_dataset, list_datasets
 

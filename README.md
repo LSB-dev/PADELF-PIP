@@ -70,7 +70,7 @@ df = padelf.get_dataset(
 | -------------------------------------- | ------------ | ---------- | --------- | ------- |
 | Open Power System Data                 | OPSD         | 60 min     | Europe    | Ready   |
 | Individual Household Power Consumption | IHPC         | 1 min      | France    | Ready   |
-| GEFCom 2012                            | GEFCOM12     | 60 min     | US        | Ready*  |
+| GEFCom 2012                            | GEFCOM12     | 60 min     | US        | Planned |
 | ENTSO-E Transparency                   | ENTSO-E      | 60 min     | Europe    | Planned |
 | ISO New England                        | ISO-NE       | 60 min     | US        | Planned |
 | NYISO                                  | NYISO        | 5 min      | US        | Planned |
@@ -78,7 +78,7 @@ df = padelf.get_dataset(
 | RTE France                             | RTE-France   | 30 min     | France    | Planned |
 | Pecan Street                           | Pecan Street | 15 min     | US        | Planned |
 
-*\* GEFCOM12: Dropbox source may be intermittently unavailable.*
+
 
 
 

@@ -146,36 +146,70 @@ def _parse_gefcom12(file_path: Path, config: dict) -> pd.DataFrame:
     return result
 
 
-def _build_dataframe(file_path: Path, config: dict) -> pd.DataFrame:
+def _parse_eld(file_path: Path, config: dict) -> pd.DataFrame:
+    """Parse ELD wide format into a datetime-indexed numeric DataFrame."""
+    df = pd.read_csv(
+        file_path,
+        sep=config.get("separator", config.get("csv_separator", ";")),
+        decimal=config.get("decimal", config.get("csv_decimal", ",")),
+        index_col=0,
+        parse_dates=True,
+        encoding=config.get("encoding", "utf-8"),
+        skiprows=config.get("skip_rows", 0),
+        na_values=config.get("na_values", []),
+    )
+    df.index = pd.to_datetime(df.index, errors="coerce")
+    df = df.apply(pd.to_numeric, errors="coerce")
+    return df
+
+
+_CUSTOM_PARSERS = {
+    "gefcom12": _parse_gefcom12,
+    "eld": _parse_eld,
+}
+
+
+def _build_dataframe(file_path: Path, config: dict, aggregate: bool = True) -> pd.DataFrame:
     """Read raw file and transform it into a normalized DataFrame."""
     custom_parser = config.get("custom_parser")
-    if custom_parser == "gefcom12":
-        df = _parse_gefcom12(file_path, config)
+    if custom_parser:
+        parser = _CUSTOM_PARSERS.get(custom_parser)
+        if parser is None:
+            available = ", ".join(sorted(_CUSTOM_PARSERS))
+            raise ValueError(
+                f"Unknown custom parser '{custom_parser}'. Available parsers: {available}"
+            )
+        df = parser(file_path, config)
     else:
         file_format = config["file_format"]
-        separator = config.get("separator", ",")
+        separator = config.get("separator", config.get("csv_separator", ","))
         if file_format not in {"csv", "zip"}:
             raise ValueError(f"Unsupported file format '{file_format}'.")
         df = pd.read_csv(
             file_path,
             sep=separator,
+            decimal=config.get("decimal", config.get("csv_decimal", ".")),
             encoding=config.get("encoding", "utf-8"),
             skiprows=config.get("skip_rows", 0),
             na_values=config.get("na_values", []),
         )
 
-    datetime_column = config["datetime_column"]
-    datetime_format = config["datetime_format"]
-    if isinstance(datetime_column, list):
-        dt_raw = df[datetime_column].astype(str).agg(" ".join, axis=1)
+    datetime_column = config.get("datetime_column")
+    datetime_format = config.get("datetime_format", "iso")
+    if isinstance(df.index, pd.DatetimeIndex):
+        datetimes = pd.Series(df.index, index=df.index)
     else:
-        dt_raw = df[datetime_column]
+        if datetime_column is None:
+            raise ValueError("Missing 'datetime_column' in dataset config.")
+        if isinstance(datetime_column, list):
+            dt_raw = df[datetime_column].astype(str).agg(" ".join, axis=1)
+        else:
+            dt_raw = df[datetime_column]
+        parse_format = None if datetime_format == "iso" else datetime_format
+        datetimes = pd.to_datetime(dt_raw, format=parse_format, errors="coerce")
 
-    parse_format = None if datetime_format == "iso" else datetime_format
-    datetimes = pd.to_datetime(dt_raw, format=parse_format, errors="coerce")
-
-    source_tz = config["timezone"]
-    if getattr(datetimes.dt, "tz", None) is None:
+    source_tz = config.get("timezone", config.get("source_timezone", "UTC"))
+    if datetimes.dt.tz is None:
         datetimes = datetimes.dt.tz_localize(
             source_tz,
             ambiguous="NaT",
@@ -185,15 +219,25 @@ def _build_dataframe(file_path: Path, config: dict) -> pd.DataFrame:
         datetimes = datetimes.dt.tz_convert(source_tz)
     datetimes = datetimes.dt.tz_convert("UTC")
 
-    consumption_column = config["consumption_column"]
-    keep_columns = [consumption_column]
-    additional_columns = config.get("additional_columns", [])
-    keep_columns.extend(additional_columns)
-    keep_columns = [col for col in keep_columns if col in df.columns]
+    load_column = config.get("load_column", config.get("consumption_column"))
+    if load_column == "__aggregate_all__":
+        numeric_cols = list(df.select_dtypes(include="number").columns)
+        out = df[numeric_cols].copy()
+        out["consumption_kW"] = out[numeric_cols].sum(axis=1)
+        if aggregate:
+            out = out[["consumption_kW"]]
+    else:
+        if load_column is None:
+            raise ValueError("Missing 'consumption_column' or 'load_column' in dataset config.")
+        keep_columns = [load_column]
+        additional_columns = config.get("additional_columns", [])
+        keep_columns.extend(additional_columns)
+        keep_columns = [col for col in keep_columns if col in df.columns]
 
-    out = df[keep_columns].copy()
-    out = out.rename(columns={consumption_column: "consumption_kW"})
-    out["consumption_kW"] = pd.to_numeric(out["consumption_kW"], errors="coerce")
+        out = df[keep_columns].copy()
+        out = out.rename(columns={load_column: "consumption_kW"})
+        out["consumption_kW"] = pd.to_numeric(out["consumption_kW"], errors="coerce")
+
     out.index = datetimes
     out.index.name = "datetime"
 
@@ -235,11 +279,11 @@ def list_datasets() -> list[str]:
 
 def get_dataset(
     name: str,
-    *,
-    resolution: Optional[str] = None,
+    resolution: str | None = None,
     consumption_unit: str = "kW",
     interpolate_limit: str = "2h",
-    cache_dir: Optional[str] = None,
+    cache_dir: str | None = None,
+    aggregate: bool = True,
 ) -> pd.DataFrame:
     """Load a dataset and return it as a pandas DataFrame.
 
@@ -254,6 +298,10 @@ def get_dataset(
             this are left as NaN. Default: ``"2h"``.
         cache_dir: Directory for caching downloaded files. If ``None``,
             defaults to ``~/.cache/padelf/``.
+        aggregate: If ``True`` (default), datasets using
+            ``load_column: "__aggregate_all__"`` return only ``consumption_kW``.
+            If ``False``, original numeric columns are kept alongside
+            ``consumption_kW``.
 
     Returns:
         A DataFrame with:
@@ -288,19 +336,21 @@ def get_dataset(
     cache = Path(cache_dir) if cache_dir else Path.home() / ".cache" / "padelf"
     cache.mkdir(parents=True, exist_ok=True)
 
-    url = config["download_url"]
+    url = config.get("download_url", config.get("url"))
+    if not url:
+        raise ValueError(f"Dataset '{name}' has no download URL configured.")
     filename = config.get("download_filename", url.split("/")[-1])
     raw_path = _download_file(url, cache, filename)
 
     if config["file_format"] == "zip" or raw_path.suffix == ".zip":
-        inner = config.get("zip_inner_path", "")
+        inner = config.get("zip_inner_path", config.get("inner_file", ""))
         data_path = _extract_zip(raw_path, inner, cache)
     else:
         data_path = raw_path
 
-    df = _build_dataframe(data_path, config)
+    df = _build_dataframe(data_path, config, aggregate=aggregate)
 
-    from_unit = config.get("consumption_unit", "kW")
+    from_unit = config.get("consumption_unit", config.get("unit", "kW"))
     res_minutes = config.get("resolution_minutes", 60)
     if from_unit != consumption_unit:
         df["consumption_kW"] = convert_unit(
