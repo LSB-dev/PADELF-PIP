@@ -1,4 +1,4 @@
-# Contributing to padelf
+# ✍ Contributing to padelf
 
 ## Getting Started
 
@@ -47,7 +47,7 @@ Use GitHub Issues with the label "enhancement". Describe the use case.
 Keep PRs focused on a single change. Tests must pass. Reference the related GitHub Issue if applicable.
 
 
-# Backlog
+# 📬 Backlog
 Here, the upcoming tasks are kept as an overview:
 
 ### [PRIO 1]
