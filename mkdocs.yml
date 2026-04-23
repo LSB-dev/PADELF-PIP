@@ -27,6 +27,7 @@ nav:
   - Getting Started: getting-started.md
   - Available Datasets: datasets.md
   - API Reference: api.md
+  - Loader Developer Guide: loader_developer_guide.md 
 
 markdown_extensions:
   - admonition

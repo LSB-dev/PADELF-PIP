@@ -1,0 +1,37 @@
+# ElectricityLoadDiagrams20112014 (ELD)
+# Source: UCI Machine Learning Repository
+# DOI: 10.24432/C58C86
+# 370 clients/substations in Portugal, 15-min resolution, 2011-2014
+# Values are in kW, semicolon-delimited CSV with European decimal format (comma)
+
+name: "ElectricityLoadDiagrams20112014"
+abbreviation: "ELD"
+url: "https://archive.ics.uci.edu/static/public/321/electricityloaddiagrams20112014.zip"  
+file_format: "zip"
+inner_file: "LD2011_2014.txt"
+custom_parser: "eld"
+
+# CSV parsing
+csv_separator: ";"
+csv_decimal: ","
+
+# Datetime
+datetime_column: 0  # first column, unnamed
+datetime_format: "%Y-%m-%d %H:%M:%S"
+source_timezone: "Europe/Lisbon"
+
+# Load column
+# The file has 370 client columns. Default behavior: sum all into consumption_kW.
+# If aggregate=False is passed, individual columns are preserved alongside the sum.
+load_column: "__aggregate_all__"
+unit: "kW"
+
+# Metadata
+domain: "S"
+region: "Portugal"
+resolution_minutes: 15
+spanned_years: "2011-2014"
+duration_months: 36
+source_doi: "10.24432/C58C86"
+
+requires_api: false
