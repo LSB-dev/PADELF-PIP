@@ -45,3 +45,15 @@ Use GitHub Issues with the label "enhancement". Describe the use case.
 ## Pull Request Guidelines
 
 Keep PRs focused on a single change. Tests must pass. Reference the related GitHub Issue if applicable.
+
+
+# Backlog
+Here, the upcoming tasks are kept as an overview:
+
+### [PRIO 1]
+- Datasets: add missing datasets
+
+### [PRIO 2]
+- Improve Cache: instead of using the original dataset format, always store the pandas df as pickle-file. This way, loading the dataset each time is much faster, instead of parsing csv file. 
+- Improve Cache: When downloading the file, make sure to not mix up files in one folder. Currently, the .cache folder stores all files. Instead, use subfolder .cache/<dadasetname> for each dataset individually 
+
