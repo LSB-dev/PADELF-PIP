@@ -5,8 +5,8 @@
 
 **Easy Pandas DataFrame-Access to publicly available electric load forecasting datasets**
 
-[![PyPI version](https://img.shields.io/pypi/v/padelf)](https://pypi.org/project/padelf/)
-[![Python](https://img.shields.io/pypi/pyversions/padelf)](https://pypi.org/project/padelf/)
+[![PyPI version](https://img.shields.io/pypi/v/padelf.svg)](https://pypi.org/project/padelf/)
+[![Python](https://img.shields.io/pypi/pyversions/padelf.svg)](https://pypi.org/project/padelf/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 `padelf` provides a minimal Python API to download, cache, and standardize
