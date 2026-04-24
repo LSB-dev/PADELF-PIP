@@ -52,6 +52,7 @@ Here, the upcoming tasks are kept as an overview:
 
 ### [PRIO 1]
 - Datasets: add missing datasets
+- Add available datetime features (derived from location + timestamps)
 
 ### [PRIO 2]
 - Improve Cache: instead of using the original dataset format, always store the pandas df as pickle-file. This way, loading the dataset each time is much faster, instead of parsing csv file. 
