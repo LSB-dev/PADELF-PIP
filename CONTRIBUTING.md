@@ -55,5 +55,6 @@ Here, the upcoming tasks are kept as an overview:
 
 ### [PRIO 2]
 - Improve Cache: instead of using the original dataset format, always store the pandas df as pickle-file. This way, loading the dataset each time is much faster, instead of parsing csv file. 
-- Improve Cache: When downloading the file, make sure to not mix up files in one folder. Currently, the .cache folder stores all files. Instead, use subfolder .cache/<dadasetname> for each dataset individually 
+- Improve Cache: When downloading the file, make sure to not mix up files in one folder. Currently, the .cache folder stores all files. Instead, use subfolder .cache/<dadasetname> for each dataset individually
+- add native language support, as suggested in [this paper](https://doi.org/10.1016/j.jss.2011.11.010) (H4)
 
