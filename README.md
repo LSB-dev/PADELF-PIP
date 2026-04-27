@@ -157,6 +157,9 @@ If this work has helped you with your scientific work, we would appreciate a pro
 }
 ```
 
+## Changelog
+*See the [Changelog File](https://github.com/LSB-dev/PADELF-PIP/blob/main/CHANGELOG.md)*
+
 ## License
 
 MIT
