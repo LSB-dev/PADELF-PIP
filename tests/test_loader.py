@@ -28,7 +28,11 @@ class TestOPSD:
         df = padelf.get_dataset("OPSD")
         diffs = df.index.to_series().diff().dropna()
         assert diffs.nunique() == 1
-
+@pytest.mark.slow
+class TestELD:
+    def test_loads_dataframe(self):
+        df = padelf.get_dataset("ELD")
+        assert isinstance(df, pd.DataFrame)
 
 @pytest.mark.slow
 class TestIHPC:

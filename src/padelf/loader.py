@@ -71,6 +71,7 @@ import pandas as pd
 import requests
 import yaml
 from pandas.tseries.frequencies import to_offset
+from tqdm import tqdm
 
 from padelf.utils import convert_unit, interpolate_gaps, resample_data
 
@@ -132,10 +133,17 @@ def _download_file(url: str, cache_dir: Path, filename: str) -> Path:
     logger.debug(f"Downloading {filename}...")
     with requests.get(url, stream=True, timeout=60) as response:
         response.raise_for_status()
+        total_size = int(response.headers.get("content-length", 0))
+        if total_size > 0:
+            logger.debug(f"Downloading {filename}... ({total_size / 1024 / 1024:.2f} MB)")
+        else:
+            total_size = None
         with target_path.open("wb") as fh:
-            for chunk in response.iter_content(chunk_size=8192):
-                if chunk:
-                    fh.write(chunk)
+            with tqdm(total=total_size, unit="B", unit_scale=True, unit_divisor=1024) as bar:
+                for chunk in response.iter_content(chunk_size=8192):
+                    if chunk:
+                        fh.write(chunk)
+                        bar.update(len(chunk))
 
     logger.debug(f"Cached raw file at {target_path}")
     return target_path
