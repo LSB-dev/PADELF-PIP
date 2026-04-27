@@ -590,6 +590,7 @@ def get_dataset(
         )
     
     cache = Path(cache_dir) if cache_dir else Path.home() / ".cache" / "padelf"
+    cache = cache / name
     cache.mkdir(parents=True, exist_ok=True)
 
     url = config.get("download_url", config.get("url"))
