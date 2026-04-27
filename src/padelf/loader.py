@@ -62,6 +62,10 @@ import warnings
 import zipfile
 from pathlib import Path
 from typing import Optional
+import logging
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 import pandas as pd
 import requests
@@ -122,9 +126,10 @@ def _download_file(url: str, cache_dir: Path, filename: str) -> Path:
     cache_dir.mkdir(parents=True, exist_ok=True)
     target_path = cache_dir / filename
     if target_path.exists():
+        logger.debug(f"Loaded from cache {target_path}")
         return target_path
 
-    print(f"Downloading {filename}...")
+    logger.debug(f"Downloading {filename}...")
     with requests.get(url, stream=True, timeout=60) as response:
         response.raise_for_status()
         with target_path.open("wb") as fh:
@@ -132,7 +137,7 @@ def _download_file(url: str, cache_dir: Path, filename: str) -> Path:
                 if chunk:
                     fh.write(chunk)
 
-    print(f"Cached at {target_path}")
+    logger.debug(f"Cached raw file at {target_path}")
     return target_path
 
 
@@ -589,19 +594,19 @@ def get_dataset(
             f"See the dataset config at {config_path} for access instructions."
         )
     
-    cache = Path(cache_dir) if cache_dir else Path.home() / ".cache" / "padelf"
-    cache = cache / name
-    cache.mkdir(parents=True, exist_ok=True)
+    dataset_cache_dir = Path(cache_dir) if cache_dir else Path.home() / ".cache" / "padelf"
+    dataset_cache_dir = dataset_cache_dir / name
+    dataset_cache_dir.mkdir(parents=True, exist_ok=True)
 
     url = config.get("download_url", config.get("url"))
     if not url:
         raise ValueError(f"Dataset '{name}' has no download URL configured.")
     filename = config.get("download_filename", url.split("/")[-1])
-    raw_path = _download_file(url, cache, filename)
+    raw_path = _download_file(url, dataset_cache_dir, filename)
 
     if config["file_format"] == "zip" or raw_path.suffix == ".zip":
         inner = config.get("zip_inner_path", config.get("inner_file", ""))
-        data_path = _extract_zip(raw_path, inner, cache)
+        data_path = _extract_zip(raw_path, inner, dataset_cache_dir)
     else:
         data_path = raw_path
 
