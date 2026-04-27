@@ -24,7 +24,7 @@
 
 name: "5359 industrial VEA load profiles"
 abbreviation: "VEA"
-url: "https://zenodo.org/records/13910298/files/load-profile-data.zip?download=1"  
+url: "https://zenodo.org/records/13910298/files/load-profile-data.zip"
 file_format: "zip"
 inner_file: "load_profiles_tabsep.csv"
 

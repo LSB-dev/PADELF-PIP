@@ -5,6 +5,18 @@ from padelf.loader import _build_dataframe
 
 
 @pytest.mark.slow
+class TestAllDatasets:
+    def test_loads_all_datasets(self):
+        for dataset in padelf.list_datasets():
+            try:
+                print(f"Loading {dataset}")
+                padelf.get_dataset(dataset)
+                print(f"✅ Successfully loaded {dataset}")
+                print()
+            except NotImplementedError as e:
+                print(f"🟠 Warning - Skipping {dataset}: {(str(e))}")
+
+@pytest.mark.slow
 class TestOPSD:
     def test_loads_dataframe(self):
         df = padelf.get_dataset("OPSD")
